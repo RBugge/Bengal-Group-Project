@@ -9,28 +9,42 @@ public class imageGrabber : MonoBehaviour
     private Texture2D panoTex;
     private int runningCoroutines = 0;
     private bool updateTexture = false;
+    private int zoom = 5;
+    private int tilex = 26;
+    private int tiley = 13;
+    private int tileDim = 256;
+    private int panoWidth;
+    private int panoHeight;
 
     IEnumerator Start()
     {
         Application.lowMemory += OnLowMemory;
 
-        panoTex = new Texture2D(256 * 26, 256 * 13, TextureFormat.RGB24, false);
+        
+
+        // The number of tiles changes with zoom level (zoom=4, x=12, y=6.  zoom=5, x=25, y=12)
+        // Dimensions of final image depend on zoom as well, (416 * 2^zoom)x(416 * 2^(zoom - 1)) (??????)
+        
+        int panoWidth = tilex * tileDim;
+        int panoHeight = (tiley * tileDim) - 256;
+
+        panoTex = new Texture2D(tileDim * tilex, tileDim * tiley, TextureFormat.RGB24, false);
 
         // Starts a new coroutine to get each tile in the equirectangular image (width=26 tiles, height=13 tiles).
-        for (int i = 0; i < 13; i++)
+        for (int i = 0; i < tiley; i++)
         {
-            for (int j = 0; j < 26; j++)
+            for (int j = 0; j < tilex; j++)
             {
                 // Limits the number of running coroutines to 50. If the limit is reached, wait for 1 second.
                 // This prevents running out of memory when textures are being created.
-                if (runningCoroutines > 50)
+                if (runningCoroutines > 30)
                 {
-                    yield return new WaitForSeconds(1);
+                    yield return new WaitUntil(() => runningCoroutines < 30);
                 }
 
                 // Url containing the tiles.
                 // PanoID is for the panorama of selected streetview location (this cannot be changed yet, but can be later once navigation is implemented).
-                string url = "https://cbk0.google.com/cbk?output=tile&panoid=lKxUOImSaCYAAAQIt71GFQ&zoom=5&x=" + j + "&y=" + i;
+                string url = "https://cbk0.google.com/cbk?output=tile&panoid=" + PanoID.GetPanoID() + "&zoom=" + zoom  + "&x=" + j + "&y=" + i;
 
                 StartCoroutine(GetTexture(url, j, i));
                 runningCoroutines++;
@@ -62,9 +76,9 @@ public class imageGrabber : MonoBehaviour
                 tex = TextureScaler.scaled(tex, 256, 256);
 
                 // Gets the pixels from tex and places them in panoTex at the correct position based on the tile coordinates.
-                int x = j * 256;
-                int y = (12 - i) * 256;
-                panoTex.SetPixels(x, y, 256, 256, tex.GetPixels());
+                int x = j * tileDim;
+                int y = (tiley - 1 - i) * tileDim;
+                panoTex.SetPixels(x, y, tileDim, tileDim, tex.GetPixels());
 
                 // Destroy the tex and webrequest object, lowering memory usage.
                 Destroy(tex);
@@ -80,7 +94,7 @@ public class imageGrabber : MonoBehaviour
     void Update()
     {
         // If there are no running coroutines and updateTexture is set to true, display the panorama on sphere.
-        if (runningCoroutines == 0 && updateTexture == true)
+        if (runningCoroutines == 0 && updateTexture)
         {
             imagePlaceholder = GameObject.Find("Sphere");
             updateTexture = false;
@@ -88,7 +102,10 @@ public class imageGrabber : MonoBehaviour
             // Creates a new texture object which loads the jpeg image data from panoTex
             // This only works because panoTex is encoded to JPG format and loaded into finalTex. Encoding to PNG takes much longer from my testing.
             // Using panoTex on the material or just setting finalTex to panoTex doesn't display.
+            //Texture2D tex = new Texture2D(panoWidth, panoHeight);
             Texture2D finalTex = new Texture2D(4, 4);
+
+            //tex.SetPixels(0, 0, panoWidth, panoHeight, panoTex.GetPixels(0, 256, panoWidth, panoHeight));
             finalTex.LoadImage(panoTex.EncodeToJPG());
             imagePlaceholder.GetComponent<Renderer>().material.mainTexture = finalTex;
         }

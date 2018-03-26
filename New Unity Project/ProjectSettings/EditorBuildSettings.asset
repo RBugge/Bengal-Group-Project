@@ -7,4 +7,7 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Main.unity
-    guid: 1d62b0f35ce28f5449232107f77c874e
+    guid: d06d15a47a41f87449bb7a417e8fdf8d
+  - enabled: 1
+    path: Assets/PanoScene.unity
+    guid: 79ddab2d1f633f543a0a144cfb27c78b
