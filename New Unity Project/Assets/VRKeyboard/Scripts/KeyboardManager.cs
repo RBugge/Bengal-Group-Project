@@ -126,7 +126,8 @@ namespace VRKeyboard.Utils
         {
             double lat;
             double lng;
-            string url = "https://maps.googleapis.com/maps/api/streetview/metadata?location=" + Input + "&key=AIzaSyAr511nsGmQKDgZA-qmBVwXObp1m2KoDAo";
+            string location = Input.Replace(" ", "+");
+            string url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + location + "&sensor=false&key=AIzaSyAr511nsGmQKDgZA-qmBVwXObp1m2KoDAo";
 
             using (WWW www = new WWW(url))
             {
@@ -137,9 +138,9 @@ namespace VRKeyboard.Utils
 
                     if (object.Equals(searchObject.status, "OK"))
                     {
-                        lat = searchObject.location.lat;
-                        lng = searchObject.location.lng;
-                        url = "https://cbks0.google.com/cbk?cb_client=apiv3&authuser=0&hl=en&output=polygon&it=1%3A1&rank=closest&ll=" + lat + "," + lng + "&radius=50";
+                        lat = searchObject.results[0].geometry.location.lat;
+                        lng = searchObject.results[0].geometry.location.lng;
+                        url = "https://cbks0.google.com/cbk?cb_client=apiv3&authuser=0&hl=en&output=polygon&it=1%3A1&rank=closest&ll=" + lat + "," + lng + "&radius=500";
 
                         using (WWW www2 = new WWW(url))
                         {
@@ -168,18 +169,56 @@ namespace VRKeyboard.Utils
         }
     }
 
+    public class AddressComponent
+    {
+        public string long_name { get; set; }
+        public string short_name { get; set; }
+        public List<string> types { get; set; }
+    }
+
     public class Location
     {
         public double lat { get; set; }
         public double lng { get; set; }
     }
 
+    public class Northeast
+    {
+        public double lat { get; set; }
+        public double lng { get; set; }
+    }
+
+    public class Southwest
+    {
+        public double lat { get; set; }
+        public double lng { get; set; }
+    }
+
+    public class Viewport
+    {
+        public Northeast northeast { get; set; }
+        public Southwest southwest { get; set; }
+    }
+
+    public class Geometry
+    {
+        public Location location { get; set; }
+        public string location_type { get; set; }
+        public Viewport viewport { get; set; }
+    }
+
+    public class SearchResult
+    {
+        public List<AddressComponent> address_components { get; set; }
+        public string formatted_address { get; set; }
+        public Geometry geometry { get; set; }
+        public string place_id { get; set; }
+        public List<string> types { get; set; }
+    }
+
     public class SearchObject
     {
-        public string copyright { get; set; }
-        public string date { get; set; }
-        public Location location { get; set; }
-        public string pano_id { get; set; }
+        public List<SearchResult> results { get; set; }
         public string status { get; set; }
     }
 

@@ -9,10 +9,10 @@ public class imageGrabber : MonoBehaviour
     private Texture2D panoTex;
     private int runningCoroutines = 0;
     private bool updateTexture = false;
-    private int zoom = 5;
-    private int tilex = 26;
-    private int tiley = 13;
-    private int tileDim = 256;
+    private int zoom = 4;
+    private int tilex = 13;
+    private int tiley = 7;
+    private int tileDim = 512;
     private int panoWidth;
     private int panoHeight;
 
@@ -25,10 +25,10 @@ public class imageGrabber : MonoBehaviour
         // The number of tiles changes with zoom level (zoom=4, x=12, y=6.  zoom=5, x=25, y=12)
         // Dimensions of final image depend on zoom as well, (416 * 2^zoom)x(416 * 2^(zoom - 1)) (??????)
         
-        int panoWidth = tilex * tileDim;
-        int panoHeight = (tiley * tileDim) - 256;
+        panoWidth = tilex * tileDim;
+        panoHeight = tiley * tileDim - 256;
 
-        panoTex = new Texture2D(tileDim * tilex, tileDim * tiley, TextureFormat.RGB24, false);
+        panoTex = new Texture2D(panoWidth, panoHeight, TextureFormat.RGB24, false);
 
         // Starts a new coroutine to get each tile in the equirectangular image (width=26 tiles, height=13 tiles).
         for (int i = 0; i < tiley; i++)
@@ -73,12 +73,20 @@ public class imageGrabber : MonoBehaviour
                 // Creates Temporary texture object to hold the downloaded texture, which is then scaled to lower memory usage.
                 Texture2D tex = new Texture2D(4, 4, TextureFormat.RGB24, false);
                 tex = ((DownloadHandlerTexture)www.downloadHandler).texture;
-                tex = TextureScaler.scaled(tex, 256, 256);
+                //tex = TextureScaler.scaled(tex, 256, 256);
 
                 // Gets the pixels from tex and places them in panoTex at the correct position based on the tile coordinates.
                 int x = j * tileDim;
-                int y = (tiley - 1 - i) * tileDim;
-                panoTex.SetPixels(x, y, tileDim, tileDim, tex.GetPixels());
+                int y = ((tiley - 1 - i) * tileDim) - 256;
+                if (i == 6)
+                {
+                    y = 0;
+                    panoTex.SetPixels(x, y, tileDim, tileDim - 256, tex.GetPixels(0, 256, 512, 256));
+                }
+                else
+                {
+                    panoTex.SetPixels(x, y, tileDim, tileDim, tex.GetPixels());
+                }
 
                 // Destroy the tex and webrequest object, lowering memory usage.
                 Destroy(tex);
@@ -102,10 +110,7 @@ public class imageGrabber : MonoBehaviour
             // Creates a new texture object which loads the jpeg image data from panoTex
             // This only works because panoTex is encoded to JPG format and loaded into finalTex. Encoding to PNG takes much longer from my testing.
             // Using panoTex on the material or just setting finalTex to panoTex doesn't display.
-            //Texture2D tex = new Texture2D(panoWidth, panoHeight);
             Texture2D finalTex = new Texture2D(4, 4);
-
-            //tex.SetPixels(0, 0, panoWidth, panoHeight, panoTex.GetPixels(0, 256, panoWidth, panoHeight));
             finalTex.LoadImage(panoTex.EncodeToJPG());
             imagePlaceholder.GetComponent<Renderer>().material.mainTexture = finalTex;
         }

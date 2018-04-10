@@ -20,6 +20,8 @@ public class LoadNextScene : MonoBehaviour {
     {
         double lat;
         double lng;
+
+        location = location.Replace(" ", "+");
         string url = "https://maps.googleapis.com/maps/api/streetview/metadata?location=" + location + "&key=AIzaSyAr511nsGmQKDgZA-qmBVwXObp1m2KoDAo";
 
         using (WWW www = new WWW(url))
